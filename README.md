@@ -1,74 +1,130 @@
-<<<<<<< HEAD
 # UPI Fraud Detection
 
-## Overview
+## What This Project Does
 
-This project focuses on detecting fraudulent transactions within the Unified Payments Interface (UPI) system using machine learning techniques. Given the increasing prevalence of digital payments, ensuring the security of such platforms is paramount. This system aims to identify and prevent potential fraudulent activities by analyzing transaction patterns and anomalies.
+This is a Flask web application that predicts whether a UPI transaction is a **VALID TRANSACTION** or a **FRAUD TRANSACTION**.
 
-## Features
+The project has two main user flows:
 
-- **Data Analysis**: Examination of transaction data to identify patterns indicative of fraud.
-- **Machine Learning Models**: Implementation of algorithms to classify transactions as legitimate or fraudulent.
-- **Interactive Dashboard**: A user-friendly interface for real-time monitoring and analysis of transaction data.
+1. **Check**
+   - User enters one transaction manually.
+   - The backend converts the form values into model features.
+   - The saved scaler and trained TensorFlow model predict the result.
+   - A small high-risk rule fallback is also used for obviously risky inputs.
 
-## Project Structure
+2. **Upload**
+   - User uploads a CSV transaction dataset.
+   - The app previews the uploaded data in a table.
+   - The current app does not retrain the model from the upload page; the train button is only a UI simulation.
 
-- **`dataset/`**: Contains the UPI transaction data used for analysis and model training.
-- **`src/`**: Includes the source code for data processing, model training, and evaluation.
-- **`static/`**: Houses static files such as CSS and images for the web interface.
-- **`templates/`**: Contains HTML templates for the web application's frontend.
-- **`app.py`**: The main Flask application file that integrates all components and runs the web server.
-- **`upi_fraud_dataset.csv`**: The dataset comprising UPI transaction records used for model training and testing.
+## Main Files
 
-## Installation
+- `app.py` - Main Flask backend. It loads the model, handles routes, builds prediction features, and returns result pages.
+- `templates/index.html` - Check form where a user enters transaction details.
+- `templates/result.html` - Result screen shown after prediction.
+- `templates/upload.html` - CSV upload page.
+- `templates/preview.html` - Uploaded CSV preview page.
+- `templates/chart.html` - Chart/dashboard page.
+- `filesuse/project_model1.h5` - Saved TensorFlow fraud detection model.
+- `filesuse/scaler.pkl` - Saved scikit-learn scaler used before model prediction.
+- `dataset/upi_fraud_dataset.csv` - Dataset used for testing/reference.
+- `src/build_model.ipynb` - Notebook used to build/train the original model.
+- `test_prediction.py` - Tests saved model predictions against dataset rows.
+- `test_web_predict.py` - Tests the Flask `/detect` route with a known fraud row.
 
-1. **Clone the Repository**:
+## Check Section Inputs
 
-2. **Create a Virtual Environment**:
+The Check form collects:
 
-3. **Install Dependencies**:
+1. UPI number
+2. Date of birth
+3. State
+4. PIN/ZIP code
+5. Transaction date and time
+6. Transaction amount
+7. Merchant category
 
-4. **Set Up the Database**:
-   Ensure that the `upi_fraud_dataset.csv` file is placed in the `dataset/` directory. This dataset will be used for training and evaluating the machine learning models.
+The backend converts these into 10 model features:
 
-## Usage
+1. Transaction hour
+2. Transaction day
+3. Transaction month
+4. Transaction year
+5. Category code
+6. UPI number
+7. Age derived from DOB and transaction date
+8. Transaction amount
+9. State code
+10. PIN/ZIP code
 
-1. **Run the Application**:
+## How Fraud Is Decided
 
-2. **Access the Web Interface**:
-   Open your web browser and navigate to `http://127.0.0.1:5000/`. Here, you can upload transaction data, view analysis results, and monitor potential fraudulent activities.
+The app uses:
 
-   
-Play the video below: ⬇️
+1. **Model probability**
+   - The scaler transforms the 10 features.
+   - The TensorFlow model predicts a probability.
+   - Probability above `0.5` is treated as fraud.
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/7bQwA4Ntvqk/0.jpg)](https://www.youtube.com/watch?v=7bQwA4Ntvqk)
+2. **High-risk fallback score**
+   - Very high transaction amount
+   - Late-night transaction time
+   - Higher-risk category
+   - Unusual age
 
+If either the model predicts fraud or the fallback score is high, the app shows **FRAUD TRANSACTION**.
 
-## How It Works
+Important: this is a student/demo fraud detector. It predicts from patterns in the local dataset and model artifacts. It does not verify real UPI IDs against a bank or payment network.
 
-1. **Data Collection**:
-   - The system uses a dataset of UPI transactions containing details such as transaction ID, amount, timestamp, sender and receiver details, and status.
+## Example Fraud Test Input
 
-2. **Data Preprocessing**:
-   - The raw transaction data undergoes cleaning and transformation, including handling missing values, encoding categorical variables, and normalizing numerical fields.
+Use this in the Check form to test the fraud result:
 
-3. **Feature Engineering**:
-   - Important features such as transaction frequency, amount deviation, and user behavior patterns are extracted to improve model accuracy.
+- UPI number: `988376137288`
+- DOB: `1972-12-15`
+- State: `Arunachal Pradesh`
+- PIN/ZIP: `588317`
+- Transaction date/time: `2020-12-27T18:30`
+- Transaction amount: `88125`
+- Category: `Travel`
 
-4. **Model Training & Prediction**:
-   - Machine learning models such as Random Forest, Decision Trees, or Neural Networks are trained on labeled transaction data.
-   - The trained model classifies new transactions as either "Legitimate" or "Fraudulent."
+Expected result:
 
-5. **Fraud Detection & Alerting**:
-   - When a transaction is classified as fraudulent, an alert is generated, notifying the user or the system administrator.
+```text
+FRAUD TRANSACTION
+```
 
-6. **Dashboard & Visualization**:
-   - The results are displayed on an interactive dashboard that provides insights into fraud trends and high-risk transactions.
+## Run The Project
 
+Install dependencies:
 
+```bash
+pip install -r requirements.txt
+```
 
+Start the app:
 
-=======
-# upi-fraud-detection
-This project focuses on detecting fraudulent transactions within the Unified Payments Interface (UPI) system using machine learning techniques. This system aims to identify and prevent potential fraudulent activities by analyzing transaction patterns and anomalies.
->>>>>>> 93580c536913fa37fa430579f393f1129b662d11
+```bash
+python app.py
+```
+
+Open:
+
+```text
+http://127.0.0.1:5000
+```
+
+## Run Checks
+
+```bash
+python -m py_compile app.py test_web_predict.py
+python test_prediction.py
+python test_web_predict.py
+```
+
+## Current Limitations
+
+- Uploaded CSV files are previewed only; they do not retrain the saved model.
+- The saved model is only as reliable as the dataset it was trained on.
+- UPI number, state, and PIN patterns may be dataset-specific, not real-world fraud indicators.
+- For a production fraud system, you would need a larger real dataset, proper validation, model monitoring, explainability, and security controls.

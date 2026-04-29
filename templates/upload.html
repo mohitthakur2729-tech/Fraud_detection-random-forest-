@@ -105,10 +105,10 @@
         <div class="col-md-8 col-lg-6" data-animate data-delay="200">
           <form action="/preview" name="fs" id="fs" method="post" enctype="multipart/form-data">
             <div class="upload-zone glass-card" id="dropZone">
-              <input type="file" name="datasetfile" id="file1" required onchange="showFileName(this)">
+              <input type="file" name="datasetfile" id="file1" accept=".csv,text/csv" required onchange="showFileName(this)">
               <i class="bi bi-cloud-arrow-up upload-icon"></i>
               <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Drag & Drop or Click to Upload</h4>
-              <p style="color: var(--text-muted); font-size: 0.9rem;">Supported formats: All file types including screenshots, CSV, Excel, PDF, and more</p>
+              <p style="color: var(--text-muted); font-size: 0.9rem;">Supported format: CSV transaction dataset</p>
               <div class="file-name" id="fileName"></div>
             </div>
 

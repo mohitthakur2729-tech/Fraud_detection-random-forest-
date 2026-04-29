@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual Environment
+venv/
+
+# Data/model artifacts
+*.csv
+*.pkl
+*.h5
+
+# OS files
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Temp / unwanted
+*.zip
+gh_cli/
+served_chart.html
+realistic_output.txt

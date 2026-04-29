@@ -4,6 +4,7 @@ import pandas as pd
 import joblib
 import tensorflow as tf
 from flask import Flask, request, render_template
+from werkzeug.exceptions import BadRequest
 
 # Load the pre-fitted scaler (must match the one used during model training)
 scaler = joblib.load('filesuse/scaler.pkl')
@@ -12,6 +13,80 @@ scaler = joblib.load('filesuse/scaler.pkl')
 model = tf.keras.models.load_model('filesuse/project_model1.h5')
 
 app = Flask(__name__)
+
+FRAUD_THRESHOLD = 0.5
+
+
+def build_features(form):
+    required_fields = [
+        "trans_datetime",
+        "dob",
+        "category",
+        "card_number",
+        "trans_amount",
+        "state",
+        "zip",
+    ]
+    missing_fields = [field for field in required_fields if not form.get(field)]
+    if missing_fields:
+        raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
+
+    trans_datetime = pd.to_datetime(form.get("trans_datetime"), errors="coerce")
+    dob = pd.to_datetime(form.get("dob"), errors="coerce")
+    if pd.isna(trans_datetime) or pd.isna(dob):
+        raise ValueError("Enter valid transaction date/time and date of birth.")
+
+    age = np.round((trans_datetime - dob).days / 365.25)
+    if age < 0:
+        raise ValueError("Date of birth cannot be after the transaction date.")
+
+    return np.array([
+        trans_datetime.hour,
+        trans_datetime.day,
+        trans_datetime.month,
+        trans_datetime.year,
+        int(form.get("category")),
+        float(form.get("card_number")),
+        age,
+        float(form.get("trans_amount")),
+        int(form.get("state")),
+        int(form.get("zip")),
+    ], dtype=float)
+
+
+def high_risk_rule_score(features):
+    trans_hour = features[0]
+    category = features[4]
+    age = features[6]
+    trans_amount = features[7]
+
+    score = 0
+    if trans_amount >= 5000:
+        score += 3
+    elif trans_amount >= 1000:
+        score += 1
+
+    if trans_hour <= 4 or trans_hour >= 23:
+        score += 1
+
+    if category in {8, 9, 10, 11, 13}:
+        score += 1
+
+    if age < 18 or age > 85:
+        score += 1
+
+    return score
+
+
+def predict_transaction(features):
+    scaled_features = scaler.transform([features])
+    model_probability = float(model.predict(scaled_features, verbose=0)[0][0])
+    rule_score = high_risk_rule_score(features)
+
+    is_fraud = model_probability > FRAUD_THRESHOLD or rule_score >= 3
+    result = "FRAUD TRANSACTION" if is_fraud else "VALID TRANSACTION"
+    return result, model_probability, rule_score
+
 
 @app.route('/')
 @app.route('/first')
@@ -22,17 +97,28 @@ def login():
     return render_template('login.html')
 @app.route('/home')
 def home():
-    return render_template('home.html')
+    return render_template('first.html')
 @app.route('/upload')
 def upload():
     return render_template('upload.html')  
-@app.route('/preview',methods=["POST"])
+@app.route('/preview', methods=["POST"])
 def preview():
-    if request.method == 'POST':
-        dataset = request.files['datasetfile']
-        df = pd.read_csv(dataset,encoding = 'unicode_escape')
+    dataset = request.files.get('datasetfile')
+    if not dataset or dataset.filename == '':
+        raise BadRequest("Please upload a CSV file.")
+
+    if not dataset.filename.lower().endswith('.csv'):
+        raise BadRequest("Only CSV files can be previewed.")
+
+    try:
+        df = pd.read_csv(dataset, encoding='unicode_escape')
+    except Exception as exc:
+        raise BadRequest("Unable to read the uploaded CSV file.") from exc
+
+    if 'Id' in df.columns:
         df.set_index('Id', inplace=True)
-        return render_template("preview.html",df_view = df) 
+
+    return render_template("preview.html", df_view=df.head(100)) 
 
 
 @app.route('/prediction1', methods=['GET'])
@@ -45,25 +131,18 @@ def chart():
 
 @app.route('/detect', methods=['POST'])
 def detect():
-    trans_datetime = pd.to_datetime(request.form.get("trans_datetime"))
-    v1 = trans_datetime.hour
-    v2 = trans_datetime.day
-    v3 = trans_datetime.month
-    v4 = trans_datetime.year
-    v5 = int(request.form.get("category"))
-    v6 = float(request.form.get("card_number"))
-    dob = pd.to_datetime(request.form.get("dob"))
-    # v7 = np.round((trans_datetime - dob) // np.timedelta64(1, 'Y'))
-    v7 = np.round((trans_datetime - dob).days / 365.25)
-    v8 = float(request.form.get("trans_amount"))
-    v9 = int(request.form.get("state"))
-    v10 = int(request.form.get("zip"))
-    x_test = np.array([v1, v2, v3, v4, v5, v6, v7, v8, v9, v10])
-    y_pred = model.predict(scaler.transform([x_test]))
-    if y_pred[0][0] <= 0.5:
-        result = "VALID TRANSACTION"
-    else:
-        result = "FRAUD TRANSACTION"
+    try:
+        x_test = build_features(request.form)
+        result, probability, rule_score = predict_transaction(x_test)
+    except ValueError as exc:
+        return render_template('result.html', OUTPUT=f"INVALID INPUT: {exc}"), 400
+
+    app.logger.info(
+        "Prediction: %s, model_probability=%.6f, rule_score=%s",
+        result,
+        probability,
+        rule_score,
+    )
     return render_template('result.html', OUTPUT='{}'.format(result))
 
 if __name__ == "__main__":
