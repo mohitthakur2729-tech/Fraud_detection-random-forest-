@@ -1,5 +1,9 @@
 # UPI Fraud Detection
 
+## Abstract
+
+UPI fraud detection is important because digital payment systems process many transactions quickly, making manual checking slow and unreliable. This project uses a supervised Random Forest classifier to classify each transaction as either **VALID TRANSACTION** or **FRAUD TRANSACTION**. The application converts user-entered transaction details into model features, including transaction time, category, UPI number, age, amount, state, and PIN code. A saved scaler normalizes these values, and the trained Random Forest model predicts fraud probability from learned transaction patterns. The system is designed as a student/demo Flask application that shows how machine learning can support fraud screening for both safe and suspicious UPI transactions.
+
 ## What This Project Does
 
 This is a Flask web application that predicts whether a UPI transaction is a **VALID TRANSACTION** or a **FRAUD TRANSACTION**.
@@ -9,8 +13,7 @@ The project has two main user flows:
 1. **Check**
    - User enters one transaction manually.
    - The backend converts the form values into model features.
-   - The saved scaler and trained TensorFlow model predict the result.
-   - A small high-risk rule fallback is also used for obviously risky inputs.
+   - The saved scaler and trained Random Forest model predict the result.
 
 2. **Upload**
    - User uploads a CSV transaction dataset.
@@ -25,12 +28,10 @@ The project has two main user flows:
 - `templates/upload.html` - CSV upload page.
 - `templates/preview.html` - Uploaded CSV preview page.
 - `templates/chart.html` - Chart/dashboard page.
-- `filesuse/project_model1.h5` - Saved TensorFlow fraud detection model.
+- `filesuse/random_forest_model.pkl` - Saved Random Forest fraud detection model.
 - `filesuse/scaler.pkl` - Saved scikit-learn scaler used before model prediction.
 - `dataset/upi_fraud_dataset.csv` - Dataset used for testing/reference.
-- `src/build_model.ipynb` - Notebook used to build/train the original model.
-- `test_prediction.py` - Tests saved model predictions against dataset rows.
-- `test_web_predict.py` - Tests the Flask `/detect` route with a known fraud row.
+- `train_random_forest.py` - Retrains the scaler and Random Forest model.
 
 ## Check Section Inputs
 
@@ -59,34 +60,43 @@ The backend converts these into 10 model features:
 
 ## How Fraud Is Decided
 
-The app uses:
-
-1. **Model probability**
-   - The scaler transforms the 10 features.
-   - The TensorFlow model predicts a probability.
-   - Probability above `0.5` is treated as fraud.
-
-2. **High-risk fallback score**
-   - Very high transaction amount
-   - Late-night transaction time
-   - Higher-risk category
-   - Unusual age
-
-If either the model predicts fraud or the fallback score is high, the app shows **FRAUD TRANSACTION**.
+The scaler transforms the 10 features, then the Random Forest model predicts a fraud probability. A probability of `0.5` or higher is shown as **FRAUD TRANSACTION**. A probability below `0.5` is shown as **VALID TRANSACTION**.
 
 Important: this is a student/demo fraud detector. It predicts from patterns in the local dataset and model artifacts. It does not verify real UPI IDs against a bank or payment network.
+
+## Example Valid Test Input
+
+Use this in the Check form to test the valid result:
+
+- UPI number: `9957000001`
+- UPI holder name: `Any Name`
+- DOB: `1968-01-01`
+- State: `Tamil Nadu`
+- PIN/ZIP: `49879`
+- Transaction date/time: `2022-01-01T00:00`
+- Transaction amount: `66.21`
+- Seller name: `Any Merchant`
+- Category: `Shopping POS`
+
+Expected result:
+
+```text
+VALID TRANSACTION
+```
 
 ## Example Fraud Test Input
 
 Use this in the Check form to test the fraud result:
 
-- UPI number: `988376137288`
-- DOB: `1972-12-15`
-- State: `Arunachal Pradesh`
-- PIN/ZIP: `588317`
-- Transaction date/time: `2020-12-27T18:30`
-- Transaction amount: `88125`
-- Category: `Travel`
+- UPI number: `9957000013`
+- UPI holder name: `Any Name`
+- DOB: `1992-01-31`
+- State: `West Bengal`
+- PIN/ZIP: `28611`
+- Transaction date/time: `2022-02-01T01:00`
+- Transaction amount: `281.06`
+- Seller name: `Any Merchant`
+- Category: `Grocery POS`
 
 Expected result:
 
@@ -108,6 +118,12 @@ Start the app:
 python app.py
 ```
 
+Retrain the model:
+
+```bash
+python train_random_forest.py
+```
+
 Open:
 
 ```text
@@ -117,9 +133,7 @@ http://127.0.0.1:5000
 ## Run Checks
 
 ```bash
-python -m py_compile app.py test_web_predict.py
-python test_prediction.py
-python test_web_predict.py
+python -m py_compile app.py train_random_forest.py
 ```
 
 ## Current Limitations

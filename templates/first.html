@@ -52,7 +52,7 @@
       <div class="row align-items-center">
         <div class="col-lg-8">
           <h1 data-typing="UPI Fraud Detection Using Machine Learning" data-typing-speed="60"></h1>
-          <h2>Advanced CNN-based fraud detection framework to identify suspicious transaction patterns in real-time.</h2>
+          <h2>Advanced Random Forest-based fraud detection framework to identify suspicious transaction patterns in real-time.</h2>
           <div style="display: inline-flex; align-items: center; gap: 12px; background: rgba(0, 255, 136, 0.08); border: 1px solid rgba(0, 255, 136, 0.25); padding: 12px 24px; border-radius: 50px; margin-top: 1.5rem;">
             <img src="../static/img/favicon.svg" alt="High Accuracy" style="width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.5));">
             <span style="color: #00ff88; font-weight: 700; font-size: 1rem; letter-spacing: 0.5px;">High Accuracy</span>
@@ -80,12 +80,12 @@
               UPI Fraud is becoming more and more prevalent in financial transactions, and at the same time, frauds are
               increasing. Conventional methods use rule-based expert systems to detect fraud behaviors, neglecting
               diverse situations and the extreme imbalance of positive and negative samples. In this paper, we propose a
-              <strong style="color: var(--accent-cyan);">CNN-based fraud detection framework</strong>, to capture the
-              intrinsic patterns of fraud behaviors learned from labeled data. Abundant transaction data is represented
-              by a feature matrix, on which a convolutional neural network is applied to identify a set of latent
-              patterns for each sample. Experiments on real-world massive transactions of a major commercial bank
-              demonstrate its <strong style="color: var(--accent-magenta);">superior performance</strong> compared with
-              some state-of-the-art methods.
+              <strong style="color: var(--accent-cyan);">Random Forest-based fraud detection framework</strong> to
+              capture transaction patterns learned from labeled data. Each transaction is converted into structured
+              features such as time, category, UPI number, age, amount, state, and PIN code. These features are scaled
+              and evaluated by a supervised Random Forest classifier that combines many decision trees to separate valid
+              transactions from suspicious ones. The model gives balanced predictions for both safe and fraud cases,
+              helping users identify risk from transaction behavior instead of relying only on fixed manual rules.
             </p>
           </div>
         </div>
@@ -97,14 +97,14 @@
           <div class="glass-card text-center h-100">
             <i class="bi bi-shield-check" style="font-size: 3rem; color: var(--accent-cyan); margin-bottom: 1rem; display: block;"></i>
             <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Real-time Detection</h4>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Instant fraud identification using trained CNN models on transaction data.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Instant fraud identification using a trained Random Forest model on transaction data.</p>
           </div>
         </div>
         <div class="col-md-4 mb-4" data-animate data-delay="200">
           <div class="glass-card text-center h-100">
             <i class="bi bi-cpu" style="font-size: 3rem; color: var(--accent-magenta); margin-bottom: 1rem; display: block;"></i>
             <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Machine Learning</h4>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Deep convolutional neural networks extract latent patterns from feature matrices.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">A Random Forest classifier combines decision trees to learn safe and fraud transaction patterns.</p>
           </div>
         </div>
         <div class="col-md-4 mb-4" data-animate data-delay="300">

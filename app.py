@@ -2,7 +2,6 @@ import os
 import numpy as np
 import pandas as pd
 import joblib
-import tensorflow as tf
 from flask import Flask, request, render_template
 from werkzeug.exceptions import BadRequest
 
@@ -10,7 +9,7 @@ from werkzeug.exceptions import BadRequest
 scaler = joblib.load('filesuse/scaler.pkl')
 
 # Load the trained model
-model = tf.keras.models.load_model('filesuse/project_model1.h5')
+model = joblib.load('filesuse/random_forest_model.pkl')
 
 app = Flask(__name__)
 
@@ -54,38 +53,12 @@ def build_features(form):
     ], dtype=float)
 
 
-def high_risk_rule_score(features):
-    trans_hour = features[0]
-    category = features[4]
-    age = features[6]
-    trans_amount = features[7]
-
-    score = 0
-    if trans_amount >= 5000:
-        score += 3
-    elif trans_amount >= 1000:
-        score += 1
-
-    if trans_hour <= 4 or trans_hour >= 23:
-        score += 1
-
-    if category in {8, 9, 10, 11, 13}:
-        score += 1
-
-    if age < 18 or age > 85:
-        score += 1
-
-    return score
-
-
 def predict_transaction(features):
     scaled_features = scaler.transform([features])
-    model_probability = float(model.predict(scaled_features, verbose=0)[0][0])
-    rule_score = high_risk_rule_score(features)
-
-    is_fraud = model_probability > FRAUD_THRESHOLD or rule_score >= 3
+    model_probability = float(model.predict_proba(scaled_features)[0][1])
+    is_fraud = model_probability >= FRAUD_THRESHOLD
     result = "FRAUD TRANSACTION" if is_fraud else "VALID TRANSACTION"
-    return result, model_probability, rule_score
+    return result, model_probability
 
 
 @app.route('/')
@@ -133,15 +106,14 @@ def chart():
 def detect():
     try:
         x_test = build_features(request.form)
-        result, probability, rule_score = predict_transaction(x_test)
+        result, probability = predict_transaction(x_test)
     except ValueError as exc:
         return render_template('result.html', OUTPUT=f"INVALID INPUT: {exc}"), 400
 
     app.logger.info(
-        "Prediction: %s, model_probability=%.6f, rule_score=%s",
+        "Prediction: %s, fraud_probability=%.6f",
         result,
         probability,
-        rule_score,
     )
     return render_template('result.html', OUTPUT='{}'.format(result))
 
